@@ -27,7 +27,7 @@ def has_file_allowed_extension(filename: str, extensions: Union[str, Tuple[str, 
 
 class LocalImageDataset_LPM(data.Dataset):
     def __init__(self, 
-                image_dir="VARSR/data/celeba_hq_256", 
+                image_dir="/VARSR-CelebA/data/kaggle/input/celebahq/CelebAHQ", 
                 image_size=512,
                 tokenizer=None,
                 accelerator=None,
@@ -44,7 +44,7 @@ class LocalImageDataset_LPM(data.Dataset):
         
         # Set up RealESRGAN degradation
         # You'll need to provide the path to params_realesrgan.yml
-        self.degradation = RealESRGAN_degradation('VARSR/dataloader/params_realesrgan.yml', device='cpu')
+        self.degradation = RealESRGAN_degradation('VARSR-CelebA/dataloader/params_realesrgan.yml', device='cpu')
         self.resize_scale = 1.25
 
         # Image preprocessing transforms
