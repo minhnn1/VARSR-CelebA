@@ -105,10 +105,10 @@ def main(args: arg_util.Args):
                 
 
     image_names = []
-    folders = os.listdir("testset/")
+    folders = os.listdir("dataset/testset/")
     val_set = []
     for folder in folders:
-        dataset_val = TestDataset("testset/" + folder, image_size=args.data_load_reso, tokenizer=None, resize_bak=True)
+        dataset_val = TestDataset("dataset/testset/" + folder, image_size=args.data_load_reso, tokenizer=None, resize_bak=True)
         ld_val = DataLoader(
             dataset_val, num_workers=0, pin_memory=True,
             batch_size=round(args.batch_size), sampler=EvalDistributedSampler(dataset_val, num_replicas=dist.get_world_size(), rank=dist.get_rank()),
@@ -145,10 +145,10 @@ def main(args: arg_util.Args):
 
 
 def metrics():
-    dir = "testset/"
+    dir = "dataset/testset/"
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     print(pyiqa.list_models())
-    folders = os.listdir("testset/")
+    folders = os.listdir("dataset/testset/")
     img_preproc = transforms.Compose([
         transforms.ToTensor(),
     ])
@@ -226,4 +226,4 @@ def metrics():
 if __name__ == "__main__":
     args: arg_util.Args = arg_util.init_dist_and_get_args()
     main(args)
-    results = metrics()
+    # results = metrics()
