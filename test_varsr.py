@@ -115,7 +115,9 @@ def main(args: arg_util.Args):
             shuffle=False, drop_last=False,
         )
         val_set.append(ld_val)
-
+        
+    total_time = 0.0
+    total_images = 0
     for ld_val in val_set:
         for batch in ld_val:
             lr_inp = batch["conditioning_pixel_values"].to(args.device, non_blocking=True)
@@ -124,10 +126,18 @@ def main(args: arg_util.Args):
 
             with torch.inference_mode():
                 with torch.autocast('cuda', enabled=True, dtype=torch.float16, cache_enabled=True):    # using bfloat16 can be faster
+                    torch.cuda.synchronize()
                     start_time = time.time()
                     recon_B3HW = var.autoregressive_infer_cfg(B=B, cfg=6.0, top_k=1, top_p=0.75,
                                                         text_hidden=None, lr_inp=lr_inp, negative_text=None, label_B=label_B, lr_inp_scale = None,
                                                         more_smooth=False)
+                    torch.cuda.synchronize()
+                    end_time = time.time()
+                    
+                    batch_time = end_time - start_time
+                    total_time += batch_time
+                    total_images += B
+
                     recon_B3HW = numpy_to_pil(pt_to_numpy(recon_B3HW))
 
             for idx in range(B):
@@ -140,7 +150,11 @@ def main(args: arg_util.Args):
                 folder_path, ext_path = os.path.split(batch['path'][idx])
                 output_name = folder_path.replace("/LR", "/VARPrediction/").replace("/HR", "/VARPrediction/")
                 os.makedirs(output_name, exist_ok=True)
+                image = image.resize((256, 256), Image.BICUBIC)
                 image.save(os.path.join(output_name, ext_path))
+    print(f"Average inference time per image: {total_time / total_images:.4f} seconds")
+    print(f"Total images processed: {total_images}")
+    print(f"Total inference time: {total_time:.2f} seconds")
     return True
 
 
@@ -177,7 +191,7 @@ def metrics():
         maniqa_iqa = []
         clip_iqa = []
         gt_img_paths.extend(sorted(glob.glob(f'{dir}/{folder}/HR/*.JPEG'))[:])
-        gt_img_paths.extend(sorted(glob.glob(f'{dir}/{folder}/HR/*.png'))[:])
+        gt_img_paths.extend(sorted(glob.glob(f'{dir}/{folder}/HR/*.jpg'))[:])
         real_image_folder = dir + "/" + folder + "/HR"
         generated_image_folder = real_image_folder.replace("/HR", "/VARPrediction")
 
@@ -226,4 +240,4 @@ def metrics():
 if __name__ == "__main__":
     args: arg_util.Args = arg_util.init_dist_and_get_args()
     main(args)
-    # results = metrics()
+    results = metrics()
